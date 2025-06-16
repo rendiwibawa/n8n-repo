@@ -1,0 +1,843 @@
+{
+  "name": "BCA Inovation AI [DONE]",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "",
+        "height": 180,
+        "width": 200,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        200,
+        120
+      ],
+      "id": "d67085fe-728f-41aa-8bce-663f1b999039",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "modelName": "={{ $('Model selector').item.json.output }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        160
+      ],
+      "id": "7531d75e-5955-40e3-8e9e-b9168787743f",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ldWsMw61F5gksuFm",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Delete data in a table",
+        "operation": "delete",
+        "tableId": "Memory for AI Agent",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('conditions0_Field_Value', `teh id of the row you are deleting with the conficting information`, 'string') }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        -220,
+        160
+      ],
+      "id": "6eb16a1f-9669-40c4-ae81-01c9e7817810",
+      "name": "Delete_row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "nitOQDf3X2wBInJ0",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Get many rows in Supabase",
+        "operation": "getAll",
+        "tableId": "Memory for AI Agent",
+        "limit": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Limit', ``, 'number') }}"
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        160
+      ],
+      "id": "25292e67-8ada-48e8-b26e-bda301060510",
+      "name": "get_all_data",
+      "credentials": {
+        "supabaseApi": {
+          "id": "nitOQDf3X2wBInJ0",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Create a row in Supabase for the new memories",
+        "tableId": "Memory for AI Agent",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "memory",
+              "fieldValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fieldValues0_Field_Value', `the memory you would you like to save from the user chat input`, 'string') }}"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{$now}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        20,
+        160
+      ],
+      "id": "647aaf39-7f19-45f5-91f2-3b52ecabea38",
+      "name": "create_row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "nitOQDf3X2wBInJ0",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1260,
+        -60
+      ],
+      "id": "fb67e4ed-83bb-4c96-b88e-c97fca05a028",
+      "name": "When chat message received",
+      "webhookId": "66ecf2b6-85c8-43c9-8e87-6101a0636ee6"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('When chat message received').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "=You are AI assistant with access to stored memories\ninformation about solution of problem. Your goal is to\nprovide helpful, personalized responses by leveraging\nthese memories when relevant.\n\nTHE TOOLS YOU HAVE:\nSupabase: Get all rows (to be used EVERYTIME you get a new\nquestion asked). Always get all the rows from Supabase.\nSerpAPI1 : Get information from internet if you dont have solution from the memory\n\n\nMEMORY TYPES YOU CAN ACCESS:\n1. All information previos sollution\n2. All problem previous\n\nUSING MEMORIES:\n- Access the Supabase database to retrieve all relevant\nstored memories when needed\n- Prioritize more recent memories when providing\ninformation\n- Use memories only when directly relevant to the\nconversation or question\n- Don't randomly list memories - ingrate them naturally\ninto your responses\n- If memories contain contradictory information, favor the more recent memory\n\nWHEN TO USE MEMORIES:\n- When user asks for incident\n- When user asks about how to\n- When user asks about specific problem\n- When providing suggestions\n- When contextual information\n\nWHEN NOT TO USE MEMORIES:\n- For general knowledge questions unrelated to personal\ncontext\n- When the current conversation clearly contradicts stored\ninformation\n- When memories are outdated based on more recent\nconversation\n\nRESPONSE APPROACH:\n- Start with a direct answer to the question\n- Naturally incorporate relevant memory information that\nenhances your response\n- Keep responses concise and friendly\n- Don't explain your memory-retrieval process - just\nrespond as a knowledgeable friend would\n\nIf there are no relevant memories to inform your response,\nsimply provide the best helpful answer you can based on\ngeneral knowledge, maintaining the same friendly,\nconversational tone.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        360,
+        -60
+      ],
+      "id": "874ce1b5-66b7-4e2c-99a8-ce6ba842f553",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-exp",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        260,
+        160
+      ],
+      "id": "2695107e-4581-4a7a-8462-df1af371a844",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ldWsMw61F5gksuFm",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('When chat message received').item.json.sessionId }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        460,
+        160
+      ],
+      "id": "0e1d9d28-56d1-408a-a6df-7474ee65ab51",
+      "name": "Simple Memory2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+      "typeVersion": 1,
+      "position": [
+        600,
+        160
+      ],
+      "id": "a04209c5-ee6f-49f5-96a9-55582a0c17f8",
+      "name": "SerpAPI1",
+      "credentials": {
+        "serpApi": {
+          "id": "JQitr8B5mjOGliQp",
+          "name": "SerpAPI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Get many rows in Supabase",
+        "operation": "getAll",
+        "tableId": "Memory for AI Agent",
+        "limit": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Limit', ``, 'number') }}"
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        700,
+        160
+      ],
+      "id": "a5b9a60e-89ba-4653-bbf3-f8372430a9f4",
+      "name": "get_data",
+      "credentials": {
+        "supabaseApi": {
+          "id": "nitOQDf3X2wBInJ0",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Memory Database",
+        "height": 200,
+        "width": 540,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        100
+      ],
+      "id": "9828346a-b5c2-40ee-bbfe-ef1782d02217",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 180,
+        "width": 200,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        880,
+        120
+      ],
+      "id": "eab90070-d13e-4ffa-b2e1-3eaf75222e01",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-lite-preview",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        940,
+        160
+      ],
+      "id": "c88e0fbd-6fbc-4cfa-9ea5-f2da1470fa61",
+      "name": "Google Gemini Chat Model4",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ldWsMw61F5gksuFm",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('When chat message received').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "=kamu adalah security AI yang memfilter kata, selalu cocokan inputan dengan get_all_data suppabase confidential data, dan beritahu user jika ia tidak sengaja memberikan data credential.\n\nTHE TOOLS YOU HAVE:\n1.Supabase: Get all rows credential_data (to be used EVERYTIME you get a new question asked).\n\nTugas :\n1. first Always get all the rows from Supabase data.\n2. compare user input, jika ada kata yang sama dengan example_data Supabase. maka [beritahu kata] dan berikan penjelasan bahwa harus berhati hati. \n3. tetap tampilkan jawaban yang tidak mengandung credential data [{{ $json.output }}] namun sensor jika ada terindikasi credential dari nomor 2 \n\nRULE :\n1. jangan pernah memberikan list kata confidential untuk output\n2. jangan membocorkan\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        920,
+        -60
+      ],
+      "id": "dbfbd528-7be3-47ec-bd90-166345637545",
+      "name": "Security Agent"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 180,
+        "width": 160,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        120
+      ],
+      "id": "d58a3429-92f3-4206-bfdf-7266eee12eef",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "cek credentials data in Supabase",
+        "operation": "getAll",
+        "tableId": "credential data",
+        "limit": "=100000000"
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        160
+      ],
+      "id": "f70090bb-74f2-4373-8f0d-10e21d5fb3b4",
+      "name": "get_all_data1",
+      "alwaysOutputData": false,
+      "credentials": {
+        "supabaseApi": {
+          "id": "nitOQDf3X2wBInJ0",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 180,
+        "width": 380,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        420,
+        120
+      ],
+      "id": "36b7fa27-479f-40c9-9078-7982cee5daea",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Dynamic Agent",
+        "height": 200,
+        "width": 200,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -660,
+        100
+      ],
+      "id": "d3eee89b-b3e0-4c59-aa1b-e9df5dc76c67",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "# Agent Memory",
+        "height": 520,
+        "width": 820,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -680,
+        -200
+      ],
+      "id": "073e5ffb-698a-471a-a30d-385949b400a7",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "# Smart Search Agent ",
+        "height": 520,
+        "width": 660,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -200
+      ],
+      "id": "83093726-c645-44bc-8a51-3b25413d5e3c",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "content": "# Security Policy Agent",
+        "height": 520,
+        "width": 480,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        840,
+        -200
+      ],
+      "id": "3cec5953-793b-46c0-89cc-c4c51bc8a9ce",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemini-2.0-flash-lite-preview",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -940,
+        160
+      ],
+      "id": "4f3ebcfb-1dbb-49f0-b929-b288a39f6372",
+      "name": "Google Gemini Chat Model3",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ldWsMw61F5gksuFm",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "# Overview\nYou are an AI agent responsible for selecting the most suitable large\nlanguage model to handle a given user request. Choose only one model\nfrom the list below based strictly on each model's strengths.\n\n## Instructions\nAnalyze the user's request and return the exact model name that best\nfits the task. Your response must contain only the model name. No\nexplanations, no formatting, no extra text.\n\n## Available Models and Strengths\n- 'models/gemini-2.0-flash-lite-preview': best for simple, factual, or lightweight\nqueries that require minimal reasoning\n- 'models/gemini-2.0-flash-lite-preview': best for standard or moderately complex\ntasks, including multi-step reasoning or basic problem solving\n\n### Output Format:\nReturn only one of the following strings:\n- models/gemini-2.0-flash-lite-preview"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -980,
+        -60
+      ],
+      "id": "d3e12440-bab8-4a4c-add5-7f0a3e3c0314",
+      "name": "Model selector"
+    },
+    {
+      "parameters": {
+        "content": "## Agent Selection",
+        "height": 200,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1000,
+        100
+      ],
+      "id": "96a1ba00-1ede-47ac-ae57-cee1c1620c95",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "content": "# Agent Model Selection",
+        "height": 520,
+        "width": 320,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1040,
+        -200
+      ],
+      "id": "c7bdcfe5-a6e9-464a-a1d4-89ef9c287e3a",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('When chat message received').item.json.sessionId }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -360,
+        160
+      ],
+      "id": "d9535430-2788-49b3-873c-99af806c6b14",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('When chat message received').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "=Petunjuk untuk AI Pelacak Memori Pintar\nSebagai AI pelacak memori pintar dalam alur kerja n8n yang terhubung ke Supabase, Anda memiliki dua fungsi utama:\n\n1. Pengambilan Memori & Respons: Ketika pengguna bertanya atau mencari informasi, cari Supabase untuk memori yang relevan dan berikan respons yang membantu.\n2. Manajemen Memori: Identifikasi, simpan, perbarui, dan hapus memori tentang solusi yang membantu user.\n\nAlat yang Tersedia\n- Supabase: Dapatkan semua baris (gunakan FIRST saat menerima PESAN APA PUN untuk memuat memori yang ada)\n- Supabase: Buat baris baru (gunakan saat solusi anda diapresiasi oleh user)\n- Supabase: Hapus baris (gunakan saat Anda perlu menghapus informasi yang bertentangan)\n\nProses Pengambilan Memori\n1. Untuk PESAN APA PUN dari pengguna, pertama-tama ambil semua memori dari Supabase\n2. Analisis permintaan untuk mengidentifikasi memori yang relevan\n3. Ketika pengguna bertanya tentang permasalahan atau topik, cari memori yang Anda ambil untuk informasi yang relevan\n4. Berikan respons yang membantu berdasarkan memori yang disimpan\n5. Jika tidak ada memori yang relevan, nyatakan dengan jelas bahwa Anda tidak memiliki informasi tersebut\n6. Jangan pernah mengklaim bahwa Anda \"tidak dapat memberikan informasi\" jika Anda memiliki memori yang relevan di Supabase\n\nProses Penyimpanan Memori\n1. Untuk user (ketika pengguna berbicara dalam sudut pandang pertama):\n- Ketika pengguna mengatakan kata pujian kepadamu contohnya \"terimakasi, sangat membantu, wow\", simpan dengan format \"user : {perintah user} + solusi : {jawaban kamu sebelumnya}\"\n\n\nManajemen Memori\n1. Identifikasi Kontradiksi:\n- Cari entri yang bertentangan dengan informasi baru\n- Ketika kontradiksi ditemukan, gunakan ID memori dari Supabase untuk menghapus memori lama:\n- Supabase: Dapatkan semua baris mengembalikan setiap memori dengan bidang ID unik (integer)\n- Gunakan nilai ID yang tepat dalam fungsi Hapus baris\n- Contoh: Jika memori \"Jack suka ski\" dengan ID 42 bertentangan dengan informasi baru \"Jack jarang ski sekarang\", hapus memori dengan ID 42\n- Setelah menghapus memori yang bertentangan, simpan informasi baru\n- Selalu prioritaskan informasi baru daripada yang lama\n\n2. Hindari Duplikat:\n- Periksa kesamaan semantik dengan memori yang ada\n- Jangan simpan duplikat informasi yang sudah ada, contoh solusi : hai + user : apa kabar sama dengan solusi : hai, apakabar + user : apa kabar. maka hapus salah satu\n\nPendekatan Respons\n- Ketika ditanya tentang berikan cara, bagaimana atau sesuatu dalam memori Anda, SELALU periksa Supabase terlebih dahulu\n- Berikan jawaban yang membantu berdasarkan memori yang disimpan\n- Jika Anda memiliki informasi yang relevan, gunakan secara alami dalam respons Anda\n- Pertahankan nada yang ramah dan conversational\n- Jangan mereferensikan \"memeriksa memori\" - cukup respons secara alami dengan informasi\n\nPenting\n- SELALU periksa Supabase SEBELUM merespons PESAN APA PUN dari pengguna, bahkan jika tampaknya seperti memori baru untuk disimpan\n- Ketika menghapus memori yang bertentangan, SELALU gunakan ID memori yang tepat (integer) yang Anda terima dari fungsi Dapatkan semua baris\n- jika tidak menemukan katakan bahwa tidak ada\n- PENTING ! Ketika pengguna mengatakan KATA PUJIANn kepadamu contohnya \"terimakasi, sangat membantu, wow dsb..\", INGAT simpan dengan format \"user : {perintah user} + solusi : {jawaban kamu sebelumnya}\"\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        -60
+      ],
+      "id": "7e3ee997-24c1-4aed-8bdb-c8190d122ef2",
+      "name": "Agent Memory Management"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        880,
+        -340
+      ],
+      "id": "031f0203-73b0-4283-b6e9-25de90fb8622",
+      "name": "Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "nitOQDf3X2wBInJ0",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b838c427-d38a-4e9b-8e99-a3c89f1a6a7d",
+              "name": "=create table public.log_ai (\n  id bigint generated by default as identity not null,\n  created_at timestamp with time zone not null default now(),\n  workflow text null,\n  input text null,\n  output text null,\n  actions text null,\n  tokens numeric null,\n  totalcost numeric null,\n  constraint log_ai_pkey primary key (id)\n) TABLESPACE pg_default;",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "cf7ed40a-5087-4042-86cb-292763b2083d",
+              "name": "",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "9c01cdae-8df2-428a-9880-bfe2c79cb04b",
+              "name": "",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "0af68bf3-16b4-4a47-a3ad-aaa612ad4ceb",
+              "name": "",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        280,
+        -360
+      ],
+      "id": "169651bd-8e80-4694-af25-6205b6c4d221",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "model": "={{ $('Model selector').item.json.output }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -600,
+        420
+      ],
+      "id": "8a859da9-bbb6-4043-88a8-6547c8b285ee",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "UkwVoA2OA8Uczvej",
+          "name": "OpenRouter account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4o",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -440,
+        420
+      ],
+      "id": "029c88a7-c080-4058-a44c-293e4e2d9b0c",
+      "name": "OpenRouter GPT 4.",
+      "credentials": {
+        "openRouterApi": {
+          "id": "UkwVoA2OA8Uczvej",
+          "name": "OpenRouter account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent Memory Management",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete_row": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent Memory Management",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_all_data": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent Memory Management",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_row": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent Memory Management",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Model selector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory2": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SerpAPI1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_data": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Security Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Security Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_all_data1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Security Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Model selector",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Model selector": {
+      "main": [
+        [
+          {
+            "node": "Agent Memory Management",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agent Memory Management",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent Memory Management": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "OpenRouter GPT 4.": {
+      "ai_languageModel": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "84c23782-00c3-4881-9cf7-4af8b666cba7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6254beded074acffa297c44a8fdf9267fd843c8e0a342bf934704df85c8d5f10"
+  },
+  "id": "T0cwiTRc4b2YVwud",
+  "tags": [
+    {
+      "createdAt": "2025-06-15T07:11:25.658Z",
+      "updatedAt": "2025-06-15T07:11:25.658Z",
+      "id": "6bCGyb50rRjgWxhp",
+      "name": "experimen"
+    },
+    {
+      "createdAt": "2025-06-11T06:07:39.539Z",
+      "updatedAt": "2025-06-11T06:07:39.539Z",
+      "id": "csNiIsjqMJtDSnjd",
+      "name": "Lab"
+    }
+  ]
+}
